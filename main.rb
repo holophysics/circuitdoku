@@ -1,3 +1,7 @@
+#===========================================================================
+#                            Classes
+#===========================================================================
+
 class Circuit
   def initialize graph
     self.graph = graph
@@ -13,12 +17,33 @@ class Solid
 end
 
 class Wire < Solid
-  def initialize x, y, w, h
-    self.x = x
+  width = 6
+  def initialize x1, y1, x2, y2
+    self.x = get_x x1, y1, x2, y2
     self.y = y
     self.w = w
     self.h = h
   end
+  #===========================================================================
+  def get_x x1, y1, x2, y2
+    if x2 == x1
+      x = x1 - (width / 2).round
+    elsif y1 == y2
+      x = x1
+    end
+    x
+  end
+  #===========================================================================
+  def get_y x1, y1, x2, y2
+    if x2 == x1
+      y = y1
+    elsif y2 == y1
+      y = y1 - (width / 2).round
+    end
+    
+    
+  end
+
 end
 
 class Sprite
@@ -70,6 +95,25 @@ class Connector < Sprite
     self.path = 'sprites/specific/connector.png'
   end
 end 
+
+#===========================================================================
+#                            Scenes
+#===========================================================================
+
+def title_tick args
+
+end
+
+def gameplay_tick args
+  
+
+  
+
+end
+
+#===========================================================================
+#                            MAIN LOOP
+#===========================================================================
 
 def tick args
   
