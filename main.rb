@@ -18,11 +18,11 @@ end
 
 class Wire < Solid
 
-  def initialize x1, y1, x2, y2, w
-    self.x = get_x x1, y1, x2, y2, w
-    self.y = get_y x1, y1, x2, y2, w
-    self.w = get_w x1, y1, x2, y2, w
-    self.h = get_h x1, y1, x2, y2, w
+  def initialize x1, y1, x2, y2
+    self.x = get_x x1, y1, x2, y2
+    self.y = get_y x1, y1, x2, y2
+    self.w = get_w x1, y1, x2, y2
+    self.h = get_h x1, y1, x2, y2
   end
 
   def serialize
@@ -42,38 +42,40 @@ class Wire < Solid
     serialize.to_s
   end
   #===========================================================================
-  def get_x x1, y1, x2, y2, w
+  @@w = 6
+
+  def get_x x1, y1, x2, y2
     if x2 == x1
-      x = x1 - (w / 2).round
+      x = x1 - (@@w / 2).round
     elsif y1 == y2
       x = x1
     end
     x
   end
   #===========================================================================
-  def get_y x1, y1, x2, y2, w
+  def get_y x1, y1, x2, y2
     if x2 == x1
       y = y1
     elsif y2 == y1
-      y = y1 - (w / 2).round
+      y = y1 - (@@w / 2).round
     end
     y
   end
   #===========================================================================
-  def get_w x1, y1, x2, y2, w
+  def get_w x1, y1, x2, y2
     if x2 == x1
-      w = w
+      w = @@w
     elsif y2 == y1
       w = x2 - x1
     end
     w
   end
   #===========================================================================
-  def get_h x1, y1, x2, y2, w
+  def get_h x1, y1, x2, y2
     if x2 == x1
       h = y2 - y1
     elsif y2 == y1
-      h = w
+      h = @@w
     end
     h
   end
@@ -147,5 +149,5 @@ end
 #===========================================================================
 
 def tick args
-  args.outputs.solids << Wire.new(220, 280, 640, 280, 6)
+  args.outputs.solids << Wire.new(220, 280, 640, 280)
 end
