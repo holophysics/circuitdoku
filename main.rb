@@ -270,20 +270,51 @@ class CDGame
     @bulbs = []
     @switches = []
 
-    @args.state.switch1 ||= SwitchHorizontal.new(480, 550)
+    @circuit = [
+      :battery_p
+      :connector,
+      :wire,
+      :corner_connector,
+      :wire,
+      :connector,
+      :switch_horizontal,
+      :connector,
+      :wire,
+      :connector,
+      :bulb,
+      :connector,
+      :wire,
+      :corner_connector,
+      :wire,
+      :corner_connector,
+      :wire,
+      :corner_connector,
+      :wire,
+      :connector,
+      :battery_n
+    ]
 
-    @args.state.bulb1 ||= Bulb.new(640, 600)
+    @corners = {
+      lower_left: {x: 320, y: 160},
+      upper_left: {x: 320, y: 550},
+      upper_right: {x: 960, y: 550},
+      lower_right: {x: 960, y: 160}
+    }
 
-    @sprites << Battery.new(320, 310)
-    @wires << Wire.new(320, 380, 320, 550)
-    @wires << Wire.new(320, 550, 415, 550)
-    @switches << @args.state.switch1
-    @wires << Wire.new(545, 550, 640, 550)
-    @bulbs << @args.state.bulb1
-    @wires << Wire.new(640, 550, 960, 550)
-    @wires << Wire.new(960, 550, 960, 160)
-    @wires << Wire.new(960, 160, 320, 160)
-    @wires << Wire.new(320, 160, 320, 235)
+    #@args.state.switch1 ||= SwitchHorizontal.new(480, 550)
+#
+    #@args.state.bulb1 ||= Bulb.new(640, 600)
+#
+    #@sprites << Battery.new(320, 310)
+    #@wires << Wire.new(320, 380, 320, 550)
+    #@wires << Wire.new(320, 550, 415, 550)
+    #@switches << @args.state.switch1
+    #@wires << Wire.new(545, 550, 640, 550)
+    #@bulbs << @args.state.bulb1
+    #@wires << Wire.new(640, 550, 960, 550)
+    #@wires << Wire.new(960, 550, 960, 160)
+    #@wires << Wire.new(960, 160, 320, 160)
+    #@wires << Wire.new(320, 160, 320, 235)
   end
 
   def title_tick args
