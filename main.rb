@@ -15,7 +15,7 @@ class Solid
     :solid
   end
 end
-
+#================================================
 class Wire < Solid
 
   @@w = 6
@@ -43,7 +43,7 @@ class Wire < Solid
   def to_s
     serialize.to_s
   end
-  #=============================================
+  
 
   def get_x x1, y1, x2, y2
     if x2 == x1
@@ -53,7 +53,7 @@ class Wire < Solid
     end
     x
   end
-  #=============================================
+  
   def get_y x1, y1, x2, y2
     if x2 == x1
       y = y1
@@ -62,7 +62,7 @@ class Wire < Solid
     end
     y
   end
-  #=============================================
+  
   def get_w x1, y1, x2, y2
     if x2 == x1
       w = @@w
@@ -71,7 +71,7 @@ class Wire < Solid
     end
     w
   end
-  #=============================================
+  
   def get_h x1, y1, x2, y2
     if x2 == x1
       h = y2 - y1
@@ -262,56 +262,69 @@ end
 #                     Scenes
 #===============================================
 
-def title_tick args
+class CDGame
+  def initialize args
+    @args = args
+    @sprites = []
+    @wires = []
+    @bulbs = []
+    @switches = []
 
-end
+    @args.state.switch1 ||= SwitchHorizontal.new(480, 550)
 
-def gameplay_tick args
+    @args.state.bulb1 ||= Bulb.new(640, 600)
+
+    @sprites << Battery.new(320, 310)
+    @wires << Wire.new(320, 380, 320, 550)
+    @wires << Wire.new(320, 550, 415, 550)
+    @switches << @args.state.switch1
+    @wires << Wire.new(545, 550, 640, 550)
+    @bulbs << @args.state.bulb1
+    @wires << Wire.new(640, 550, 960, 550)
+    @wires << Wire.new(960, 550, 960, 160)
+    @wires << Wire.new(960, 160, 320, 160)
+    @wires << Wire.new(320, 160, 320, 235)
+  end
+
+  def title_tick args
+  end
   
+  def iterate
+    if @args.inputs.mouse.down && @args.inputs.mouse.inside_rect?(@args.state.switch1)
+      if @args.state.switch1.path == 'sprites/specific/switch-hor-open.png'
+        @args.state.switch1.path = 'sprites/specific/switch-hor-closed.png'
+        @args.state.bulb1.path = 'sprites/specific/bulb-lit.png'
+        @args.state.bulb1.x += 1
+        @args.state.bulb1.y += 1
+        @args.outputs.sounds << 'sounds/click.wav'
+      elsif @args.state.switch1.path == 'sprites/specific/switch-hor-closed.png'
+        @args.state.switch1.path = 'sprites/specific/switch-hor-open.png'
+        @args.state.bulb1.path = 'sprites/specific/bulb-unlit.png'
+        @args.state.bulb1.x -= 1
+        @args.state.bulb1.y -= 1
+        @args.outputs.sounds << 'sounds/click.wav'
+      end
+    end
+  end
+
+  def render
+    @args.outputs.sprites << [@sprites, @bulbs, @switches]
+    @args.outputs.solids << @wires
+  end
+
+  def gameplay_tick
+    iterate
+    render
+  end
 end
+
+
 
 #===============================================
 #                   MAIN LOOP
 #===============================================
 
 def tick args
-  sprites = []
-  wires = []
-  bulbs = []
-  switches = []
-
-  args.state.switch1 ||= SwitchHorizontal.new(480, 550)
-
-  args.state.bulb1 ||= Bulb.new(640, 600)
-
-  sprites << Battery.new(320, 310)
-  wires << Wire.new(320, 380, 320, 550)
-  wires << Wire.new(320, 550, 415, 550)
-  switches << args.state.switch1
-  wires << Wire.new(545, 550, 640, 550)
-  bulbs << args.state.bulb1
-  wires << Wire.new(640, 550, 960, 550)
-  wires << Wire.new(960, 550, 960, 160)
-  wires << Wire.new(960, 160, 320, 160)
-  wires << Wire.new(320, 160, 320, 235)
-
-  args.outputs.sprites << [sprites, bulbs, switches]
-
-  args.outputs.solids << wires
-
-  if args.inputs.mouse.down && args.inputs.mouse.inside_rect?(args.state.switch1)
-    if args.state.switch1.path == 'sprites/specific/switch-hor-open.png'
-      args.state.switch1.path = 'sprites/specific/switch-hor-closed.png'
-      args.state.bulb1.path = 'sprites/specific/bulb-lit.png'
-      args.state.bulb1.x += 1
-      args.state.bulb1.y += 1
-      args.outputs.sounds << 'sounds/click.wav'
-    elsif args.state.switch1.path == 'sprites/specific/switch-hor-closed.png'
-      args.state.switch1.path = 'sprites/specific/switch-hor-open.png'
-      args.state.bulb1.path = 'sprites/specific/bulb-unlit.png'
-      args.state.bulb1.x -= 1
-      args.state.bulb1.y -= 1
-      args.outputs.sounds << 'sounds/click.wav'
-    end
-  end
+  args.state.game = CDGame.new args
+  args.state.game.gameplay_tick
 end
