@@ -1,7 +1,25 @@
+#todo  IMPLEMENT RENDER BY PICKING ITEMS FROM BRANCH_HASH, THEN ADDING TO OUTPUTS
+#todo  GIVE EVERY CIRCUIT ELEMENT A "CONDUCTIVE" METHOD
+#todo  IMPLEMENT ITERATE BY CHECKING THAT ALL ELEMENTS IN BRANCH HAVE CONDUCTIVE = TRUE, THEN LIGHTING ANY BULBS IN BRANCH
+#todo  USE CIRCUIT CLASS    
 #===============================================
 #                     Classes
 #===============================================
 
+class Branch
+  def initialize branch_hash p1, p2
+    @branch_hash = branch_hash
+  end
+
+  def connection_point_1
+    p1
+  end
+
+  def connection_point_2
+    p2
+  end
+end
+#================================================
 class Circuit
   def initialize graph
     @graph = graph
@@ -20,8 +38,8 @@ class Wire < Solid
 
   @@w = 6
 
-  def initialize x1, y1, x2, y2
-    self.x = get_x x1, y1, x2, y2
+  def initialize p1, p2
+    self.x = get_x p1, p2
     self.y = get_y x1, y1, x2, y2
     self.w = get_w x1, y1, x2, y2
     self.h = get_h x1, y1, x2, y2
@@ -45,7 +63,11 @@ class Wire < Solid
   end
   
 
-  def get_x x1, y1, x2, y2
+  def get_x p1, p2
+    x1 = p1[:x]
+    y1 = p1[:y]
+    x2 = p2[:x]
+    y2 = p2[:y]
     if x2 == x1
       x = x1 - (@@w / 2).round
     elsif y1 == y2
@@ -54,7 +76,11 @@ class Wire < Solid
     x
   end
   
-  def get_y x1, y1, x2, y2
+  def get_y p1, p2
+    x1 = p1[:x]
+    y1 = p1[:y]
+    x2 = p2[:x]
+    y2 = p2[:y]
     if x2 == x1
       y = y1
     elsif y2 == y1
@@ -63,7 +89,11 @@ class Wire < Solid
     y
   end
   
-  def get_w x1, y1, x2, y2
+  def get_w p1, p2
+    x1 = p1[:x]
+    y1 = p1[:y]
+    x2 = p2[:x]
+    y2 = p2[:y]
     if x2 == x1
       w = @@w
     elsif y2 == y1
@@ -72,13 +102,25 @@ class Wire < Solid
     w
   end
   
-  def get_h x1, y1, x2, y2
+  def get_h p1, p2
+    x1 = p1[:x]
+    y1 = p1[:y]
+    x2 = p2[:x]
+    y2 = p2[:y]
     if x2 == x1
       h = y2 - y1
     elsif y2 == y1
       h = @@w
     end
     h
+  end
+
+  def connection_point_1
+    p1
+  end
+
+  def connection_point_2
+    p2
   end
 end
 #===============================================
@@ -98,22 +140,22 @@ class SwitchHorizontal < Sprite
   @@W = 160
   @@H = 160
 
-  def initialize x_c, y_c
-    self.x = (x_c - @@W / 2).round
-    self.y = (y_c - @@H / 2).round
+  def initialize point1
+    self.x = (point1[:x])
+    self.y = (point1[:y] - @@H / 2)
     self.w = @@W
     self.h = @@H
     self.path = 'sprites/specific/switch-hor-open.png'
-    @is_open = true
+    @conductive = true
   end
 
   def toggle
-    @is_open = !@is_open
+    @conductive = !@conductive
 
-    if @is_open == true
-      path = "sprites/specific/switch-hor-open.png"
-    elsif @is_open == false
+    if @conductive
       path = "sprites/specific/switch-hor-closed.png"
+    else
+      path = "sprites/specific/switch-hor-open.png"
     end
   end
 
@@ -133,6 +175,14 @@ class SwitchHorizontal < Sprite
 
   def to_s
     serialize.to_s
+  end
+
+  def connection_point_1
+    point1
+  end
+
+  def connection_point_2
+    {x: point1[:x] + @@W, y: point1[:y]}
   end
 end
 #===============================================
@@ -176,16 +226,23 @@ class SwitchVertical < Sprite
   def to_s
     serialize.to_s
   end
+
+  def connection_point_1
+
+  end
+
+  def connection_point_2
+
+  end
 end
 #===============================================
-
 class Bulb < Sprite
   @@W = 98
   @@H = 134
 
-  def initialize x_c, y_c
-    self.x = (x_c - @@W/2).round
-    self.y = (y_c - @@H/2).round
+  def initialize p1
+    self.x = (p1[:x])
+    self.y = (p1[:y] - @@H/5)
     self.w = @@W
     self.h = @@H
     self.path = 'sprites/specific/bulb-unlit.png'
@@ -216,15 +273,23 @@ class Bulb < Sprite
   def to_s
     serialize.to_s
   end
+
+  def connection_point_1
+    p1
+  end
+
+  def connection_point_2
+    {x: p1[:x] + @@W, y: p1[:y]}
+  end
 end 
 #===============================================
 class Battery < Sprite
   @@W = 73
   @@H = 138
 
-  def initialize x_c, y_c
-    self.x = (x_c - @@W/2).round
-    self.y = (y_c - @@H/2).round
+  def initialize p1
+    self.x = p1[:x] - @@W/2
+    self.y = p1[:y]
     self.w = @@W
     self.h = @@H
     self.path = 'sprites/specific/battery.png'
@@ -247,19 +312,51 @@ class Battery < Sprite
   def to_s
     serialize.to_s
   end
-end 
-#===============================================
-class Connector < Sprite
-  def initialize x, y, w, h
-    @x = x
-    @y = y
-    @w = w
-    @h = h
-    @path = 'sprites/specific/connector.png'
+
+  def connection_point_1
+    p1
+  end
+
+  def connection_point_2
+    {x: p1[:x], y: p1[y] + @@H}
   end
 end 
 #===============================================
-#                     Scenes
+class Connector < Sprite
+  @@SIZE = 6
+
+  def initialize point
+    self.x = point[:x]
+    self.y = point[:y]
+    self.w = @@SIZE
+    self.h = @@SIZE
+    self.path = 'sprites/specific/connector.png'
+  end
+
+  def serialize
+    {
+      x: x,
+      y: y,
+      w: w,
+      h: h,
+      path: path
+    }
+  end
+
+  def inspect
+    serialize.to_s
+  end
+
+  def to_s
+    serialize.to_s
+  end
+
+  def point
+    point
+  end
+end 
+#===============================================
+#                     Game Class
 #===============================================
 
 class CDGame
@@ -270,29 +367,29 @@ class CDGame
     @bulbs = []
     @switches = []
 
-    @circuit = [
-      :battery_p
-      :connector,
-      :wire,
-      :corner_connector,
-      :wire,
-      :connector,
-      :switch_horizontal,
-      :connector,
-      :wire,
-      :connector,
-      :bulb,
-      :connector,
-      :wire,
-      :corner_connector,
-      :wire,
-      :corner_connector,
-      :wire,
-      :corner_connector,
-      :wire,
-      :connector,
-      :battery_n
-    ]
+    @circuit = Branch.new {
+      battery_p: Battery.new {x: 320, y: 91},
+      connector1: Connector.new @circuit[:battery_p].connection_point_2,
+      wire1: Wire.new @circuit[:connector1].point, @circuit[:corner_connector1].point,
+      corner_connector1: Connector.new @corners[lower_left],
+      wire2: Wire.new @circuit[:corner_connector1].point, @circuit[:connector2].point,
+      connector2: Connector.new {x: (@corners[:upper_left][:x] + @corners[:upper_right][:x]) / 3, y: @corners[:upper_left][:y]},
+      switch_horizontal1: SwitchHorizontal.new , @circuit[:connector2.point],
+      connector3: Connector.new @circuit[:switch_horizontal1].connection_point_2,
+      wire3: Wire.new @circuit[:connector3].point, @circuit[connector4].point, 
+      connector4: Connector.new {x: 2 * (@corners[:upper_left][:x] + @corners[:upper_right][:x]) / 3, y: @corners[:upper_right][:y]},
+      bulb1: Bulb.new @circuit[:connector4].point,
+      connector5: @circuit[:bulb1].connection_point_2,
+      wire4: Wire.new @circuit[:connector5].point, @circuit[:corner_connector2].point,
+      corner_connector2: Connector.new @corners[:upper_right],
+      wire5: Wire.new @circuit[:corner_connector2].point, @circuit[:corner_connector3].point,
+      corner_connector3: Connector.new @corners[:lower_right],
+      wire6: Wire.new @circuit[:corner_connector3], @circuit[:corner_connector4],
+      corner_connector4: Connector.new @corners[:lower_right],
+      wire7: Wire.new @circuit[:corner_connector4].point, @circuit[:connector6].point, 
+      connector6: Connector.new @circuit[:battery_p].connection_point_1,
+      battery_n: nil
+    }
 
     @corners = {
       lower_left: {x: 320, y: 160},
