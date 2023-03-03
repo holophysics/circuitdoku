@@ -1,5 +1,4 @@
-#todo  IMPLEMENT RENDER BY PICKING ITEMS FROM BRANCH_HASH, THEN ADDING TO OUTPUTS
-#todo  GIVE EVERY CIRCUIT ELEMENT A "CONDUCTIVE" METHOD
+#todo  IMPLEMENT RENDER BY PICKING ITEMS FROM BRANCH_ARRAY, THEN ADDING TO OUTPUTS
 #todo  IMPLEMENT ITERATE BY CHECKING THAT ALL ELEMENTS IN BRANCH HAVE CONDUCTIVE = TRUE, THEN LIGHTING ANY BULBS IN BRANCH
 #todo  USE CIRCUIT CLASS    
 #===============================================
@@ -7,16 +6,30 @@
 #===============================================
 
 class Branch
-  def initialize branch_hash p1, p2
+
+  def initialize branch_hash, positive, negative
     @branch_hash = branch_hash
+    @positive = positive
+    @negative = negative
   end
 
-  def connection_point_1
-    p1
+  def branch_hash
+    @branch_hash
   end
 
-  def connection_point_2
-    p2
+  def set_branch_hash new_hash
+    @branch_hash = new_hash
+  end
+  def negative
+    @negative
+  end
+
+  def positive
+    @positive
+  end
+
+  def conductive
+    true
   end
 end
 #================================================
@@ -40,9 +53,11 @@ class Wire < Solid
 
   def initialize p1, p2
     self.x = get_x p1, p2
-    self.y = get_y x1, y1, x2, y2
-    self.w = get_w x1, y1, x2, y2
-    self.h = get_h x1, y1, x2, y2
+    self.y = get_y p1, p2
+    self.w = get_w p1, p2
+    self.h = get_h p1, p2
+    @p1 = p1
+    @p2 = p2
   end
 
   def serialize
@@ -69,11 +84,11 @@ class Wire < Solid
     x2 = p2[:x]
     y2 = p2[:y]
     if x2 == x1
-      x = x1 - (@@w / 2).round
+      x = x1 - @@w / 2
     elsif y1 == y2
       x = x1
     end
-    x
+    x + 3
   end
   
   def get_y p1, p2
@@ -86,7 +101,7 @@ class Wire < Solid
     elsif y2 == y1
       y = y1 - (@@w / 2).round
     end
-    y
+    y + 3
   end
   
   def get_w p1, p2
@@ -116,11 +131,15 @@ class Wire < Solid
   end
 
   def connection_point_1
-    p1
+    @p1
   end
 
   def connection_point_2
-    p2
+    @p2
+  end
+
+  def conductive
+    true
   end
 end
 #===============================================
@@ -137,25 +156,25 @@ class Sprite
 end
 #===============================================
 class SwitchHorizontal < Sprite
-  @@W = 160
-  @@H = 160
+  @@W = 200
+  @@H = 200
 
   def initialize point1
     self.x = (point1[:x])
-    self.y = (point1[:y] - @@H / 2)
+    self.y = (point1[:y] - @@H / 2 + 3)
     self.w = @@W
     self.h = @@H
-    self.path = 'sprites/specific/switch-hor-open.png'
-    @conductive = true
+    self.path = 'sprites/switch-horizont-open.png',
+    @conductive = false
   end
 
   def toggle
     @conductive = !@conductive
 
     if @conductive
-      path = "sprites/specific/switch-hor-closed.png"
+      path = "sprites/specific/switch-horizont-closed.png"
     else
-      path = "sprites/specific/switch-hor-open.png"
+      path = "sprites/specific/switch-horizont-open.png"
     end
   end
 
@@ -184,28 +203,32 @@ class SwitchHorizontal < Sprite
   def connection_point_2
     {x: point1[:x] + @@W, y: point1[:y]}
   end
+
+  def conductive
+    @conductive
+  end
 end
 #===============================================
 class SwitchVertical < Sprite
   @@W = 160
   @@H = 160
 
-  def initialize x_c, y_c
-    self.x = (x_c - @@W / 2).round
-    self.y = (y_c - @@H / 2).round
+  def initialize point1
+    self.x = point1[:x] - @@W / 2
+    self.y = point1[:y]
     self.w = @@W
     self.h = @@H
-    self.path = set_path
-    @is_open = true
+    self.path = "sprites/specific/switch-ver-open.png"
+    @conductive = false
   end
 
   def toggle
-    @is_open = !@is_open
+    @conductive = !@conductive
 
-    if @is_open == true
-      path = "sprites/specific/switch-ver-open.png"
-    elsif @is_open == false
+    if @conductive == true
       path = "sprites/specific/switch-ver-closed.png"
+    elsif @conductive == false
+      path = "sprites/specific/switch-ver-open.png"
     end
   end
 
@@ -228,11 +251,15 @@ class SwitchVertical < Sprite
   end
 
   def connection_point_1
-
+    point1
   end
 
   def connection_point_2
+    {x: point1[:x], y: point1[:y] + @@H}
+  end
 
+  def conductive
+    @conductive
   end
 end
 #===============================================
@@ -275,11 +302,15 @@ class Bulb < Sprite
   end
 
   def connection_point_1
-    p1
+    {x: x + @@W / 2, y: y + @@H / 5}
   end
 
   def connection_point_2
-    {x: p1[:x] + @@W, y: p1[:y]}
+    {x: x + @@W * 3 / 2, y: y + @@H / 5}
+  end
+
+  def conductive
+    true
   end
 end 
 #===============================================
@@ -288,11 +319,12 @@ class Battery < Sprite
   @@H = 138
 
   def initialize p1
-    self.x = p1[:x] - @@W/2
+    self.x = p1[:x] - @@W/2 - 4
     self.y = p1[:y]
     self.w = @@W
     self.h = @@H
     self.path = 'sprites/specific/battery.png'
+    @p1 = p1
   end
 
   def serialize
@@ -314,11 +346,11 @@ class Battery < Sprite
   end
 
   def connection_point_1
-    p1
+    @p1
   end
 
   def connection_point_2
-    {x: p1[:x], y: p1[y] + @@H}
+    {x: @p1[:x], y: @p1[y] + @@H}
   end
 end 
 #===============================================
@@ -326,8 +358,8 @@ class Connector < Sprite
   @@SIZE = 6
 
   def initialize point
-    self.x = point[:x]
-    self.y = point[:y]
+    self.x = point[:x] - @@SIZE / 2
+    self.y = point[:y] - @@SIZE / 2
     self.w = @@SIZE
     self.h = @@SIZE
     self.path = 'sprites/specific/connector.png'
@@ -352,7 +384,11 @@ class Connector < Sprite
   end
 
   def point
-    point
+    {x: x, y: y}
+  end
+
+  def conductive
+    true
   end
 end 
 #===============================================
@@ -363,33 +399,8 @@ class CDGame
   def initialize args
     @args = args
     @sprites = []
-    @wires = []
+    
     @bulbs = []
-    @switches = []
-
-    @circuit = Branch.new {
-      battery_p: Battery.new {x: 320, y: 91},
-      connector1: Connector.new @circuit[:battery_p].connection_point_2,
-      wire1: Wire.new @circuit[:connector1].point, @circuit[:corner_connector1].point,
-      corner_connector1: Connector.new @corners[lower_left],
-      wire2: Wire.new @circuit[:corner_connector1].point, @circuit[:connector2].point,
-      connector2: Connector.new {x: (@corners[:upper_left][:x] + @corners[:upper_right][:x]) / 3, y: @corners[:upper_left][:y]},
-      switch_horizontal1: SwitchHorizontal.new , @circuit[:connector2.point],
-      connector3: Connector.new @circuit[:switch_horizontal1].connection_point_2,
-      wire3: Wire.new @circuit[:connector3].point, @circuit[connector4].point, 
-      connector4: Connector.new {x: 2 * (@corners[:upper_left][:x] + @corners[:upper_right][:x]) / 3, y: @corners[:upper_right][:y]},
-      bulb1: Bulb.new @circuit[:connector4].point,
-      connector5: @circuit[:bulb1].connection_point_2,
-      wire4: Wire.new @circuit[:connector5].point, @circuit[:corner_connector2].point,
-      corner_connector2: Connector.new @corners[:upper_right],
-      wire5: Wire.new @circuit[:corner_connector2].point, @circuit[:corner_connector3].point,
-      corner_connector3: Connector.new @corners[:lower_right],
-      wire6: Wire.new @circuit[:corner_connector3], @circuit[:corner_connector4],
-      corner_connector4: Connector.new @corners[:lower_right],
-      wire7: Wire.new @circuit[:corner_connector4].point, @circuit[:connector6].point, 
-      connector6: Connector.new @circuit[:battery_p].connection_point_1,
-      battery_n: nil
-    }
 
     @corners = {
       lower_left: {x: 320, y: 160},
@@ -398,46 +409,83 @@ class CDGame
       lower_right: {x: 960, y: 160}
     }
 
-    #@args.state.switch1 ||= SwitchHorizontal.new(480, 550)
-#
-    #@args.state.bulb1 ||= Bulb.new(640, 600)
-#
-    #@sprites << Battery.new(320, 310)
-    #@wires << Wire.new(320, 380, 320, 550)
-    #@wires << Wire.new(320, 550, 415, 550)
-    #@switches << @args.state.switch1
-    #@wires << Wire.new(545, 550, 640, 550)
-    #@bulbs << @args.state.bulb1
-    #@wires << Wire.new(640, 550, 960, 550)
-    #@wires << Wire.new(960, 550, 960, 160)
-    #@wires << Wire.new(960, 160, 320, 160)
-    #@wires << Wire.new(320, 160, 320, 235)
+    @branch = Branch.new( {}, {x: 320, y: 300 + 138}, {x: 320, y: 300} )
+    @battery = Battery.new get_branch.negative
+
+    ulx = get_corners[:upper_left][:x]
+    uly = get_corners[:upper_left][:y]
+    urx = get_corners[:upper_right][:x]
+    ury = get_corners[:upper_right][:y]
+    lrx = get_corners[:lower_right][:x]
+    lry = get_corners[:lower_right][:y]
+    llx = get_corners[:lower_left][:x]
+    lly = get_corners[:lower_left][:y]
+
+    @connectors = [
+      Connector.new({x: get_branch.positive[:x], y: get_branch.positive[:y] + 5}),
+      Connector.new(get_corners[:upper_left]),
+      Connector.new({x: ulx + (urx - ulx) / 4, y: uly}),
+      Connector.new({x: ulx + (urx - ulx) / 3 + 160, y: uly}),
+      Connector.new({x: ulx + (urx - ulx) * 2 / 3, y: uly}),
+      Connector.new({x: ulx + (urx - ulx) * 2 / 3 + 98, y: uly}),
+      Connector.new(get_corners[:upper_right]),
+      Connector.new(get_corners[:lower_right]),
+      Connector.new(get_corners[:lower_left]),
+      Connector.new({x: get_branch.negative[:x], y: get_branch.negative[:y] - 8})
+    ]
+
+    @wires = [
+      make_wire(0, 1),
+      make_wire(1, 2),
+      make_wire(3, 4),
+      make_wire(5, 6),
+      make_wire(6, 7),
+      make_wire(7, 8),
+      make_wire(8, 9)
+    ]
+
+    @switches = [
+      SwitchHorizontal.new(get_connector[2].point)
+    ]
+
+    @bulbs = [
+      Bulb.new(get_connector[4].point)
+    ]
+
+    @branch_array = [
+      
+    ]
+  end
+
+  def get_corners
+    @corners
+  end
+
+  def get_branch
+    @branch
+  end
+
+  def get_connector
+    @connectors
+  end
+
+  def make_wire a, b
+    Wire.new(get_connector[a].point, get_connector[b].point)
   end
 
   def title_tick args
   end
   
   def iterate
-    if @args.inputs.mouse.down && @args.inputs.mouse.inside_rect?(@args.state.switch1)
-      if @args.state.switch1.path == 'sprites/specific/switch-hor-open.png'
-        @args.state.switch1.path = 'sprites/specific/switch-hor-closed.png'
-        @args.state.bulb1.path = 'sprites/specific/bulb-lit.png'
-        @args.state.bulb1.x += 1
-        @args.state.bulb1.y += 1
-        @args.outputs.sounds << 'sounds/click.wav'
-      elsif @args.state.switch1.path == 'sprites/specific/switch-hor-closed.png'
-        @args.state.switch1.path = 'sprites/specific/switch-hor-open.png'
-        @args.state.bulb1.path = 'sprites/specific/bulb-unlit.png'
-        @args.state.bulb1.x -= 1
-        @args.state.bulb1.y -= 1
-        @args.outputs.sounds << 'sounds/click.wav'
-      end
-    end
+    if @args.inputs.mouse.down && @args.inputs.mouse.inside_rect?(@switches[0])
+      @switches[0].toggle
+    end   
   end
 
   def render
-    @args.outputs.sprites << [@sprites, @bulbs, @switches]
-    @args.outputs.solids << @wires
+    @args.outputs.sprites << [@battery, @connectors, @switches, @bulbs]
+    @args.outputs.solids << [@wires]
+
   end
 
   def gameplay_tick
