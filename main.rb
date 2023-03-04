@@ -8,34 +8,20 @@ $gtk.reset
 #===============================================
 
 class Branch
+  attr_accessor :branch_array
+  attr_reader :positive, :negative, :conductive
 
-  def initialize branch_hash, positive, negative
-    @branch_hash = branch_hash
+  def initialize branch_array, positive, negative
+    @branch_array = branch_array
     @positive = positive
     @negative = negative
-  end
-
-  def branch_hash
-    @branch_hash
-  end
-
-  def set_branch_hash new_hash
-    @branch_hash = new_hash
-  end
-  def negative
-    @negative
-  end
-
-  def positive
-    @positive
-  end
-
-  def conductive
-    true
+    @conductive = true
   end
 end
 #================================================
 class Circuit
+  attr_accessor :graph
+
   def initialize graph
     @graph = graph
   end
@@ -50,16 +36,17 @@ class Solid
 end
 #================================================
 class Wire < Solid
-
+  attr_reader :connection_point_1, :connection_point_2, :conductive
   @@w = 6
 
   def initialize p1, p2
-    self.x = get_x p1, p2
-    self.y = get_y p1, p2
-    self.w = get_w p1, p2
-    self.h = get_h p1, p2
-    @p1 = p1
-    @p2 = p2
+    @x = get_x(p1, p2)
+    @y = get_y(p1, p2)
+    @w = get_w(p1, p2)
+    @h = get_h(p1, p2)
+    @connection_point_1 = p1
+    @connection_point_2 = p2
+    @conductive = true
   end
 
   def serialize
@@ -90,7 +77,7 @@ class Wire < Solid
     elsif y1 == y2
       x = x1
     end
-    x + 3
+    x
   end
   
   def get_y p1, p2
@@ -100,10 +87,10 @@ class Wire < Solid
     y2 = p2[:y]
     if x2 == x1
       y = y1
-    elsif y2 == y1
-      y = y1 - (@@w / 2).round
+    elsif y1 == y2
+      y = y1 - (@@w / 2)
     end
-    y + 3
+    y
   end
   
   def get_w p1, p2
@@ -113,7 +100,7 @@ class Wire < Solid
     y2 = p2[:y]
     if x2 == x1
       w = @@w
-    elsif y2 == y1
+    elsif y1 == y2
       w = x2 - x1
     end
     w
@@ -126,22 +113,10 @@ class Wire < Solid
     y2 = p2[:y]
     if x2 == x1
       h = y2 - y1
-    elsif y2 == y1
+    elsif y1 == y2
       h = @@w
     end
     h
-  end
-
-  def connection_point_1
-    @p1
-  end
-
-  def connection_point_2
-    @p2
-  end
-
-  def conductive
-    true
   end
 end
 #===============================================
@@ -158,17 +133,21 @@ class Sprite
 end
 #===============================================
 class SwitchHorizontal < Sprite
-  @@W = 200
-  @@H = 200
+  attr_accessor :conductive
+  attr_reader :connection_point_1, :connection_point_2
+
+  @@W = 140
+  @@H = 140
 
   def initialize point1
-    self.x = (point1[:x])
-    self.y = (point1[:y] - @@H / 2 + 3)
-    self.w = @@W
-    self.h = @@H
-    self.path = 'sprites/specific/switch-horizont-open.png',
-    self.blendmode_enum = 4
+    @x = (point1[:x])
+    @y = (point1[:y] - @@H / 2 + 3)
+    @w = @@W
+    @h = @@H
+    @path = 'sprites/specific/switch-horizont-open.png'
     @conductive = false
+    @connection_point_1 = point1
+    @connection_point_2 = {x: point1[:x] + @@W * 9 / 10, y: point1[:y]}
   end
 
   def toggle
@@ -199,31 +178,23 @@ class SwitchHorizontal < Sprite
   def to_s
     serialize.to_s
   end
-
-  def connection_point_1
-    point1
-  end
-
-  def connection_point_2
-    {x: point1[:x] + @@W, y: point1[:y]}
-  end
-
-  def conductive
-    @conductive
-  end
 end
 #===============================================
-class SwitchVertical < Sprite
-  @@W = 160
-  @@H = 160
+class SwitchVertical < Sprite 
+  attr_reader :connection_point_1, :connection_point_2, :conductive
+
+  @@W = 140
+  @@H = 140
 
   def initialize point1
-    self.x = point1[:x] - @@W / 2
-    self.y = point1[:y]
-    self.w = @@W
-    self.h = @@H
-    self.path = "sprites/specific/switch-ver-open.png"
+    @x = point1[:x] - @@W / 2
+    @y = point1[:y]
+    @w = @@W
+    @h = @@H
+    @path = "sprites/specific/switch-ver-open.png"
     @conductive = false
+    @connection_point_1 = point1
+    @connection_point_2 = {x: point1[:x], y: point1[:y] + @@H}
   end
 
   def toggle
@@ -253,34 +224,28 @@ class SwitchVertical < Sprite
   def to_s
     serialize.to_s
   end
-
-  def connection_point_1
-    point1
-  end
-
-  def connection_point_2
-    {x: point1[:x], y: point1[:y] + @@H}
-  end
-
-  def conductive
-    @conductive
-  end
 end
 #===============================================
 class Bulb < Sprite
+  attr_reader :conductive, :connection_point_1, :connection_point_2
+
   @@W = 98
   @@H = 134
 
   def initialize p1
-    self.x = (p1[:x])
-    self.y = (p1[:y] - @@H/5)
-    self.w = @@W
-    self.h = @@H
-    self.path = 'sprites/specific/bulb-unlit.png'
-    self.source_x = 40
-    self.source_y = 40
-    self.source_w = 900
-    self.source_h = 1200
+    @x = (p1[:x])
+    @y = (p1[:y] - @@H/5)
+    @w = @@W
+    @h = @@H
+    @path = 'sprites/specific/bulb-unlit.png'
+    @source_x = 40
+    @source_y = 40
+    @source_w = 900
+    @source_h = 1200
+
+    @conductive = true
+    @connection_point_1 = {x: p1[:x] + @@W / 4, y: p1[:y]}
+    @connection_point_2 = {x: p1[:x] + @@W * 7 / 12, y: p1[:y]}
   end
 
   def serialize
@@ -304,31 +269,23 @@ class Bulb < Sprite
   def to_s
     serialize.to_s
   end
-
-  def connection_point_1
-    {x: x + @@W / 2, y: y + @@H / 5}
-  end
-
-  def connection_point_2
-    {x: x + @@W * 3 / 2, y: y + @@H / 5}
-  end
-
-  def conductive
-    true
-  end
 end 
 #===============================================
 class Battery < Sprite
+  attr_reader :conductive, :connection_point_1, :connection_point_2
+
   @@W = 73
   @@H = 138
 
   def initialize p1
-    self.x = p1[:x] - @@W/2 - 4
-    self.y = p1[:y]
-    self.w = @@W
-    self.h = @@H
-    self.path = 'sprites/specific/battery.png'
-    @p1 = p1
+    @x = p1[:x] - @@W/2 - 4
+    @y = p1[:y]
+    @w = @@W
+    @h = @@H
+    @path = 'sprites/specific/battery.png'
+    @connection_point_1 = {x: p1[:x] + 3, y: p1[:y] - 3}
+    @connection_point_2 = {x: p1[:x] + 3, y: p1[:y] + @@H + 3}
+    @conductive = true
   end
 
   def serialize
@@ -347,26 +304,22 @@ class Battery < Sprite
 
   def to_s
     serialize.to_s
-  end
-
-  def connection_point_1
-    @p1
-  end
-
-  def connection_point_2
-    {x: @p1[:x], y: @p1[y] + @@H}
   end
 end 
 #===============================================
 class Connector < Sprite
+  attr_reader :conductive, :point
+
   @@SIZE = 6
 
   def initialize point
-    self.x = point[:x] - @@SIZE / 2
-    self.y = point[:y] - @@SIZE / 2
-    self.w = @@SIZE
-    self.h = @@SIZE
-    self.path = 'sprites/specific/connector.png'
+    @x = point[:x] - @@SIZE / 2 + 3
+    @y = point[:y] - @@SIZE / 2 + 3
+    @w = @@SIZE
+    @h = @@SIZE
+    @path = 'sprites/specific/connector.png'
+    @conductive = true
+    @point = point
   end
 
   def serialize
@@ -385,14 +338,6 @@ class Connector < Sprite
 
   def to_s
     serialize.to_s
-  end
-
-  def point
-    {x: x, y: y}
-  end
-
-  def conductive
-    true
   end
 end 
 #===============================================
@@ -402,9 +347,6 @@ end
 class CDGame
   def initialize args
     @args = args
-    @sprites = []
-    
-    @bulbs = []
 
     @corners = {
       lower_left: {x: 320, y: 160},
@@ -413,29 +355,31 @@ class CDGame
       lower_right: {x: 960, y: 160}
     }
 
-    @branch = Branch.new( {}, {x: 320, y: 300 + 138}, {x: 320, y: 300} )
-    @battery = Battery.new get_branch.negative
+    ulx = @corners[:upper_left][:x]
+    uly = @corners[:upper_left][:y]
+    urx = @corners[:upper_right][:x]
+    ury = @corners[:upper_right][:y]
+    lrx = @corners[:lower_right][:x]
+    lry = @corners[:lower_right][:y]
+    llx = @corners[:lower_left][:x]
+    lly = @corners[:lower_left][:y]
 
-    ulx = get_corners[:upper_left][:x]
-    uly = get_corners[:upper_left][:y]
-    urx = get_corners[:upper_right][:x]
-    ury = get_corners[:upper_right][:y]
-    lrx = get_corners[:lower_right][:x]
-    lry = get_corners[:lower_right][:y]
-    llx = get_corners[:lower_left][:x]
-    lly = get_corners[:lower_left][:y]
+    @branch = Branch.new( {}, {x: 320, y: 300 + 138}, {x: 320, y: 300} )
+    @battery = Battery.new @branch.negative
+    @bulb = Bulb.new({x: ulx + (urx - ulx) * 2 / 3, y: uly})
+    @switch = SwitchHorizontal.new({x: ulx + (urx - ulx) / 4, y: uly}) 
 
     @connectors = [
-      Connector.new({x: get_branch.positive[:x], y: get_branch.positive[:y] + 5}),
-      Connector.new(get_corners[:upper_left]),
-      Connector.new({x: ulx + (urx - ulx) / 4, y: uly}),
-      Connector.new({x: ulx + (urx - ulx) / 3 + 160, y: uly}),
-      Connector.new({x: ulx + (urx - ulx) * 2 / 3, y: uly}),
-      Connector.new({x: ulx + (urx - ulx) * 2 / 3 + 98, y: uly}),
-      Connector.new(get_corners[:upper_right]),
-      Connector.new(get_corners[:lower_right]),
-      Connector.new(get_corners[:lower_left]),
-      Connector.new({x: get_branch.negative[:x], y: get_branch.negative[:y] - 8})
+      Connector.new(@battery.connection_point_2),
+      Connector.new(@corners[:upper_left]),
+      Connector.new(@switch.connection_point_1),
+      Connector.new(@switch.connection_point_2),
+      Connector.new(@bulb.connection_point_1),
+      Connector.new(@bulb.connection_point_2),
+      Connector.new(@corners[:upper_right]),
+      Connector.new(@corners[:lower_right]),
+      Connector.new(@corners[:lower_left]),
+      Connector.new(@battery.connection_point_1)
     ]
 
     @wires = [
@@ -449,11 +393,11 @@ class CDGame
     ]
 
     @switches = [
-      SwitchHorizontal.new(get_connector[2].point)
+      SwitchHorizontal.new(@connectors[2].point)
     ]
 
     @bulbs = [
-      Bulb.new(get_connector[4].point)
+      @bulb
     ]
 
     @branch_array = [
@@ -461,20 +405,8 @@ class CDGame
     ]
   end
 
-  def get_corners
-    @corners
-  end
-
-  def get_branch
-    @branch
-  end
-
-  def get_connector
-    @connectors
-  end
-
   def make_wire a, b
-    Wire.new(get_connector[a].point, get_connector[b].point)
+    Wire.new(@connectors[a].point, @connectors[b].point)
   end
 
   def title_tick args
