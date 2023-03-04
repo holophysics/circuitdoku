@@ -1,6 +1,8 @@
 #todo  IMPLEMENT RENDER BY PICKING ITEMS FROM BRANCH_ARRAY, THEN ADDING TO OUTPUTS
 #todo  IMPLEMENT ITERATE BY CHECKING THAT ALL ELEMENTS IN BRANCH HAVE CONDUCTIVE = TRUE, THEN LIGHTING ANY BULBS IN BRANCH
 #todo  USE CIRCUIT CLASS    
+$gtk.reset
+
 #===============================================
 #                     Classes
 #===============================================
@@ -164,7 +166,8 @@ class SwitchHorizontal < Sprite
     self.y = (point1[:y] - @@H / 2 + 3)
     self.w = @@W
     self.h = @@H
-    self.path = 'sprites/switch-horizont-open.png',
+    self.path = 'sprites/specific/switch-horizont-open.png',
+    self.blendmode_enum = 4
     @conductive = false
   end
 
@@ -184,7 +187,8 @@ class SwitchHorizontal < Sprite
       y: y,
       w: w,
       h: h,
-      path: path
+      path: path,
+      blendmode_enum: blendmode_enum
     }
   end
 
@@ -501,6 +505,6 @@ end
 #===============================================
 
 def tick args
-  args.state.game = CDGame.new args
+  args.state.game ||= CDGame.new args
   args.state.game.gameplay_tick
 end
