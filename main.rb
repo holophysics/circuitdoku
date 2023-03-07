@@ -11,11 +11,19 @@ class Branch
   attr_accessor :branch_array
   attr_reader :positive, :negative, :conductive
 
-  def initialize branch_array, positive, negative
-    @branch_array = branch_array
+  def initialize positive, negative
+    @branch_array = []
     @positive = positive
     @negative = negative
-    @conductive = true
+    @conductive = false
+  end
+
+  def conductive?
+    result = true
+    @branch_array.each do |element|
+      result = result && element.conductive
+    end
+    result
   end
 end
 #================================================
@@ -72,12 +80,13 @@ class Wire < Solid
     y1 = p1[:y]
     x2 = p2[:x]
     y2 = p2[:y]
+    x = 0
     if x2 == x1
       x = x1 - @@w / 2
     elsif y1 == y2
       x = x1
     end
-    x
+    x + 3
   end
   
   def get_y p1, p2
@@ -85,12 +94,13 @@ class Wire < Solid
     y1 = p1[:y]
     x2 = p2[:x]
     y2 = p2[:y]
+    y = 0
     if x2 == x1
       y = y1
     elsif y1 == y2
       y = y1 - (@@w / 2)
     end
-    y
+    y + 3
   end
   
   def get_w p1, p2
@@ -98,6 +108,7 @@ class Wire < Solid
     y1 = p1[:y]
     x2 = p2[:x]
     y2 = p2[:y]
+    w = 5
     if x2 == x1
       w = @@w
     elsif y1 == y2
@@ -111,6 +122,7 @@ class Wire < Solid
     y1 = p1[:y]
     x2 = p2[:x]
     y2 = p2[:y]
+    h = 10
     if x2 == x1
       h = y2 - y1
     elsif y1 == y2
@@ -133,7 +145,7 @@ class Sprite
 end
 #===============================================
 class SwitchHorizontal < Sprite
-  attr_accessor :conductive
+  attr_accessor :conductive, :path
   attr_reader :connection_point_1, :connection_point_2
 
   @@W = 140
@@ -148,16 +160,6 @@ class SwitchHorizontal < Sprite
     @conductive = false
     @connection_point_1 = point1
     @connection_point_2 = {x: point1[:x] + @@W * 9 / 10, y: point1[:y]}
-  end
-
-  def toggle
-    @conductive = !@conductive
-
-    if @conductive
-      path = "sprites/specific/switch-horizont-closed.png"
-    else
-      path = "sprites/specific/switch-horizont-open.png"
-    end
   end
 
   def serialize
@@ -227,7 +229,8 @@ class SwitchVertical < Sprite
 end
 #===============================================
 class Bulb < Sprite
-  attr_reader :conductive, :connection_point_1, :connection_point_2
+  attr_accessor :conductive, :path, :x, :y
+  attr_reader :connection_point_1, :connection_point_2
 
   @@W = 98
   @@H = 134
@@ -278,13 +281,13 @@ class Battery < Sprite
   @@H = 138
 
   def initialize p1
-    @x = p1[:x] - @@W/2 - 4
+    @x = p1[:x] - @@W/2 + 1
     @y = p1[:y]
     @w = @@W
     @h = @@H
     @path = 'sprites/specific/battery.png'
-    @connection_point_1 = {x: p1[:x] + 3, y: p1[:y] - 3}
-    @connection_point_2 = {x: p1[:x] + 3, y: p1[:y] + @@H + 3}
+    @connection_point_1 = {x: p1[:x], y: p1[:y] - 12}
+    @connection_point_2 = {x: p1[:x], y: p1[:y] + @@H + 5}
     @conductive = true
   end
 
@@ -364,7 +367,7 @@ class CDGame
     llx = @corners[:lower_left][:x]
     lly = @corners[:lower_left][:y]
 
-    @branch = Branch.new( {}, {x: 320, y: 300 + 138}, {x: 320, y: 300} )
+    @branch = Branch.new({x: 320, y: 300 + 138}, {x: 320, y: 300})
     @battery = Battery.new @branch.negative
     @bulb = Bulb.new({x: ulx + (urx - ulx) * 2 / 3, y: uly})
     @switch = SwitchHorizontal.new({x: ulx + (urx - ulx) / 4, y: uly}) 
@@ -393,16 +396,46 @@ class CDGame
     ]
 
     @switches = [
-      SwitchHorizontal.new(@connectors[2].point)
+      @switch
     ]
 
     @bulbs = [
       @bulb
     ]
 
-    @branch_array = [
-      
+    @branch_list = [
+      @wires[0],
+      @wires[1],
+      @switches[0],
+      @wires[2],
+      @bulbs[0],
+      @wires[3],
+      @wires[4],
+      @wires[5],
+      @wires[6]
     ]
+
+    @branch.branch_array = @branch_list
+
+  end
+
+  
+
+  def serialize 
+    {
+      connectors: @connectors,
+      wires: @wires,
+      switches: @switches,
+      bulbs: @bulbs
+    }
+  end
+
+  def inspect
+    serialize.to_s
+  end
+
+  def to_s
+    serialize.to_s
   end
 
   def make_wire a, b
@@ -413,9 +446,23 @@ class CDGame
   end
   
   def iterate
-    if @args.inputs.mouse.down && @args.inputs.mouse.inside_rect?(@switches[0])
-      @switches[0].toggle
-    end   
+    if @args.inputs.mouse.down && @args.inputs.mouse.inside_rect?(@switch)
+      if !@switch.conductive
+        @switch.conductive = true
+        @switch.path = 'sprites/specific/switch-horizont-closed.png'
+        @args.outputs.sounds << 'sounds/high-click.wav'
+      else
+        @switch.conductive = false
+        @switch.path = 'sprites/specific/switch-horizont-open.png'
+        @args.outputs.sounds << 'sounds/low-click.wav'
+      end
+    end  
+
+    if @branch.conductive?
+      @bulb.path = 'sprites/specific/bulb-lit.png'
+    else
+      @bulb.path = 'sprites/specific/bulb-unlit.png'
+    end
   end
 
   def render
